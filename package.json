@@ -4,7 +4,7 @@
   "description": "Wrkr datastore for MongoDB",
   "main": "wrkr_mongodb.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
     "tdd": "mocha -w"
   },
   "homepage": "https://github.com/whyhankee/wrkr-store-mongodb",
