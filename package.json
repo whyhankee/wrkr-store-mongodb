@@ -1,0 +1,28 @@
+{
+  "name": "wrkr-store-mongodb",
+  "version": "0.0.1",
+  "description": "Wrkr datastore for MongoDB",
+  "main": "wrkr_mongodb.js",
+  "scripts": {
+    "test": "mocha"
+    "tdd": "mocha -w"
+  },
+  "homepage": "https://github.com/whyhankee/wrkr-store-mongodb",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:whyhankee/wrkr-store-mongodb.git"
+  },
+  "dependencies": {
+    "debug": "2.2.0",
+    "mongoose": "4.4.4"
+  },
+  "devDependencies": {
+    "async": "1.5.2",
+    "expect.js": "0.3.1",
+    "mocha": "2.4.5",
+    "random-string": "0.1.2",
+    "wrkr-tests": "0.0.3"
+  },
+  "author": "Paul Wijhenke <paul@paulsplace.nl>",
+  "license": "MIT"
+}
