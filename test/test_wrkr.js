@@ -1,7 +1,7 @@
 /* jshint mocha: true */
 'use strict';
+var Wrkr = require('wrkr');
 var WrkrMongodb = require('../wrkr_mongodb');
-var WrkrTestSuite = require('wrkr-tests');
 
 
 // Initialize our workerInterface
@@ -16,7 +16,7 @@ var backend = new WrkrMongodb({
   errorRetryTime:    500,     // default: 5000, on error retry timer
                               //    (not so happy with auto-retrying though)
 });
-var wrkrTests = new WrkrTestSuite(backend);
+var wrkrTests = new Wrkr.Tests(backend);
 
 
 // Start testing
