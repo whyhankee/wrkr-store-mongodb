@@ -196,9 +196,7 @@ WrkrMongodb.prototype.getQueueItems = function getQueueItems(filter, done) {
 // Delete specific qitem
 WrkrMongodb.prototype.deleteQueueItems = function deleteQueueItems(event, done) {
   var mongoFilter = {
-    name: event.name,
-    tid: event.tid,
-    done: {$exists: false}
+    id: event.id
   };
   debug('deleteQueueItems', mongoFilter);
   this.QueueItems.remove(mongoFilter, function (err) {
