@@ -51,7 +51,7 @@ var optDefaults = {
   dbOpt:             {w: 1},  // Write concern
 
   pollInterval:      500,     // regular polling time (waiting for new items)
-  pollIntervalBusy:  5,       // quick-fetch-next-polltimer after processing an item
+  pollIntervalBusy:  5        // quick-fetch-next-polltimer after processing an item
 };
 
 
@@ -176,7 +176,7 @@ WrkrMongodb.prototype.subscriptions = function subscriptions(eventName, done) {
 
 WrkrMongodb.prototype.publish = function publish(events, done) {
   debug('publish', events);
-  this.QueueItems.collection.insertMany(events, done);
+  return this.QueueItems.collection.insertMany(events, done);
 };
 
 
