@@ -1,6 +1,6 @@
 {
   "name": "wrkr-store-mongodb",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Wrkr datastore for MongoDB",
   "main": "wrkr_mongodb.js",
   "scripts": {
