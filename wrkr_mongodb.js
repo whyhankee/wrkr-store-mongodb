@@ -8,7 +8,7 @@ var debug = require('debug')('wrkr:mongodb');
  ********************************************************************/
 
 var subscriptionSchema = {
-  eventName:  { type: String, unique: true },
+  eventName:  {type: String, unique: true},
   queues:     []
 };
 
@@ -17,25 +17,13 @@ var qItemsSchema = {
   queue:      {type: String, index: true},
   created:    {type: Date, index: true, default: Date.now},
 
-  when:       {type: Date, index: true, sparse: true},
-  done:       {type: Date, index: true, sparse: true},
-  errored:    {type: Date, index: true, sparse: true},
-
   name:       {type: String},
   tid:        {type: String, index: true},
   payload:    {type: mongoose.Schema.Types.Mixed},
 
-  // The stack with encountered errors
-  // [
-  //  {
-  //    date: new Date(),
-  //    message: String,
-  //    stack: [String],
-  //  }
-  // ]
-  errorList:  [mongoose.Schema.Types.Mixed]
+  when:       {type: Date, index: true, sparse: true},
+  done:       {type: Date, index: true, sparse: true}
 };
-
 
 
 /********************************************************************
@@ -121,7 +109,10 @@ WrkrMongodb.prototype.stop = function stop(done) {
     this.pollTimer = null;
   }
 
-  this.db.close(done);
+  this.db.close(function (err) {
+    debug('closed database, stop done, err: ' + (err ? err.toString() : '<none>'));
+    return done(err || null);
+  });
 };
 
 
@@ -187,49 +178,17 @@ WrkrMongodb.prototype.publish = function publish(events, done) {
 WrkrMongodb.prototype.getQueueItems = function getQueueItems(filter, done) {
   var mongoFilter = Object.create(filter);
   mongoFilter.when = {$exists: true};
-  this.QueueItems.find(mongoFilter, {}, {created: 1}, function (err, qitems) {
+  this.QueueItems.find(mongoFilter, {}, {sort: {created: 1}}, function (err, qitems) {
     return done(err || null, qitems);
   });
 };
 
 
 // Delete specific qitem
-WrkrMongodb.prototype.deleteQueueItems = function deleteQueueItems(event, done) {
-  var mongoFilter = {
-    id: event.id
-  };
-  debug('deleteQueueItems', mongoFilter);
-  this.QueueItems.remove(mongoFilter, function (err) {
+WrkrMongodb.prototype.deleteQueueItems = function deleteQueueItems(spec, done) {
+  debug('deleteQueueItems', spec);
+  this.QueueItems.remove(spec, function (err) {
     return done(err || null);
-  });
-};
-
-
-WrkrMongodb.prototype.errorQueueItem = function errorQueueItem(event, err, done) {
-  debug(`report err for processed qitem ${event.name} ${event.tid}`);
-  let updateSpec = {
-    errored: new Date(),
-    $addToSet: {errorState: err.toString()}
-  };
-  this.QueueItems.findByIdAndUpdate(event.id, updateSpec, function (err) {
-    if (err) return done(err);
-    debug(`archived processed qitem ${event.name} (${event.tid})`);
-    return done(null);
-  });
-};
-
-
-// Mark processed qitem as done
-WrkrMongodb.prototype.doneQueueItem = function archiveMarkDone(event, done) {
-  debug(`archiving processed qitem ${event.name} ${event.tid}`);
-  let updateSpec = {
-    $unset: { when: 1 },
-    $set:   { done: new Date() }
-  };
-  this.QueueItems.findByIdAndUpdate(event.id, updateSpec, function (err) {
-    if (err) return done(err);
-    debug(`archived processed qitem ${event.name} (${event.tid})`);
-    return done(null);
   });
 };
 
@@ -242,7 +201,7 @@ WrkrMongodb.prototype.listen = function listen(done) {
   var self = this;
   var listenQueues = Object.keys(self.listenQueues);
 
-  debug('listen - start polling - polltimer: started');
+  debug('listen - start polling - polltimer: started', self.listenQueues);
 
   self.pollTimer = Date.now();
   setImmediate(function () {
@@ -251,7 +210,6 @@ WrkrMongodb.prototype.listen = function listen(done) {
   return done(null);
 
   function updatePollTimer(timeoutMs) {
-    // debug('polltimer: update', timeoutMs);
     if (self.pollTimer === null) {
       return debug('listen - updatePollTimer: detected stoppage');
     }
@@ -264,9 +222,12 @@ WrkrMongodb.prototype.listen = function listen(done) {
       when:  {$lte: new Date()},
       queue: {$in: listenQueues}
     };
-    var options = {sort: {created: 1}};
+    var options = {
+      sort: {created: 1}
+    };
     var updateSpec = {
-      $unset: {when: 1}
+      $unset: {when: 1},
+      $set: {done: new Date()}
     };
     // debug('polling', searchSpec, updateSpec, sort);
     self.QueueItems.findOneAndUpdate(searchSpec, updateSpec, options, (err, event) => {
@@ -277,8 +238,6 @@ WrkrMongodb.prototype.listen = function listen(done) {
 
       // Prepare event to dispatch to Wrkr
       var eventObj = event.toObject();
-      eventObj.id = event.id;
-      delete eventObj._id;
 
       debug('dispatching event to Wkrk', eventObj);
       self.wrkr._dispatch(eventObj, (err) => {
